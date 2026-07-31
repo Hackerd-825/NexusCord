@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusCord - Le générateur d'annonces ultime pour Discord</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        discord: {
+                            bg: '#313338',
+                            sidebar: '#2B2D31',
+                            panel: '#1E1F22',
+                            input: '#383A40',
+                            accent: '#5865F2',
+                            hover: '#4752C4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js pour le rendu Markdown de base -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Styles fidèles à la typographie et mise en page exacte de Discord (Desktop App Look) */
+        .discord-font { font-family: 'gg sans', 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        
+        .markdown-body { color: #dbdee1; font-size: 0.9375rem; line-height: 1.375rem; word-break: break-word; white-space: pre-wrap; }
+        .markdown-body p { margin-bottom: 0.5rem; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body strong { font-weight: 600; color: #f2f3f5; }
+        .markdown-body em { font-style: italic; }
+        
+        /* Titres Discord exacts (Tailwind typings customisés) */
+        .markdown-body h1 { font-size: 1.5rem; font-weight: 700; line-height: 1.875rem; color: #f2f3f5; margin-top: 0.25rem; margin-bottom: 0.5rem; }
+        .markdown-body h2 { font-size: 1.25rem; font-weight: 700; line-height: 1.625rem; color: #f2f3f5; margin-top: 0.25rem; margin-bottom: 0.5rem; }
+        .markdown-body h3 { font-size: 1rem; font-weight: 600; line-height: 1.375rem; color: #f2f3f5; margin-top: 0.25rem; margin-bottom: 0.5rem; }
+        
+        .markdown-body code { background-color: #1e1f22; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: Consolas, Andale Mono WT, Andale Mono, Lucida Console, Lucida Sans Typewriter, Monaco, Courier New, monospace; font-size: 0.85rem; color: #dbdee1; }
+        .markdown-body pre { background-color: #2b2d31; border: 1px solid #1e1f22; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem; }
+        .markdown-body blockquote { border-left: 4px solid #4f545c; padding-left: 1rem; margin: 0.25rem 0; color: #dbdee1; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; }
+        .markdown-body ol { list-style-type: decimal; padding-left: 1.5rem; }
+        
+        /* Effets Discord fidèles (Spoiler et Souligné) */
+        .discord-spoiler { background-color: #111214; color: transparent; border-radius: 3px; cursor: pointer; user-select: none; transition: background-color 0.1s ease; padding: 0 2px; }
+        .discord-spoiler:hover, .discord-spoiler.revealed { background-color: #393c43; color: #dbdee1; }
+        .discord-underline { text-decoration: underline; }
+    </style>
+</head>
+<body class="bg-discord-bg text-gray-100 min-h-screen flex flex-col discord-font">
+
+    <!-- En-tête avec le nom : NexusCord -->
+    <header class="bg-discord-panel border-b border-gray-800 py-4 px-6 shadow-md flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="bg-discord-accent p-2.5 rounded-xl text-white shadow-lg flex items-center justify-center">
+                <i class="fa-brands fa-discord text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
+                    NexusCord
+                </h1>
+                <p class="text-xs text-gray-400">Créez, personnalisez et diffusez vos messages et embeds avec un aperçu visuel identique à l'application Discord.</p>
+            </div>
+        </div>
+        <button onclick="resetForm()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3.5 py-2 rounded-lg text-xs font-semibold transition border border-gray-700 flex items-center space-x-2 shadow">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>Réinitialiser</span>
+        </button>
+    </header>
+
+    <!-- Corps Principal -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Panneau de Configuration (Gauche) -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- 1. Config Webhook -->
+            <div class="bg-discord-panel border border-gray-800 p-5 rounded-2xl shadow-xl space-y-4">
+                <h2 class="text-base font-semibold text-indigo-400 flex items-center">
+                    <i class="fa-solid fa-link mr-2"></i> 1. Identité du Webhook
+                </h2>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">URL du Webhook Discord</label>
+                    <div class="relative">
+                        <input type="password" id="webhookUrl" placeholder="https://discord.com/api/webhooks/..." class="w-full bg-discord-input border border-gray-700 rounded-lg pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition">
+                        <button type="button" onclick="toggleWebhookVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-200 transition focus:outline-none">
+                            <i id="eyeIcon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Nom du Bot (Optionnel)</label>
+                        <input type="text" id="webhookUsername" placeholder="Ex: NexusBot" class="w-full bg-discord-input border border-gray-700 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">URL Avatar du Bot</label>
+                        <input type="text" id="webhookAvatar" placeholder="https://..." class="w-full bg-discord-input border border-gray-700 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sélecteur de Sections Actives -->
+            <div class="bg-discord-panel border border-gray-800 p-4 rounded-2xl shadow-xl grid grid-cols-3 gap-3">
+                <label id="labelIncludeText" class="cursor-pointer flex flex-col items-center justify-center p-3 bg-indigo-600/20 text-indigo-300 rounded-xl border border-indigo-500 transition group shadow-md">
+                    <input type="checkbox" id="includeText" checked onchange="toggleSections()" class="sr-only">
+                    <i class="fa-solid fa-message mb-1 text-lg group-hover:scale-110 transition"></i>
+                    <span class="text-xs font-bold">Texte Brut</span>
+                </label>
+                <label id="labelIncludeEmbed" class="cursor-pointer flex flex-col items-center justify-center p-3 bg-indigo-600/20 text-indigo-300 rounded-xl border border-indigo-500 transition group shadow-md">
+                    <input type="checkbox" id="includeEmbed" checked onchange="toggleSections()" class="sr-only">
+                    <i class="fa-solid fa-rectangle-ad mb-1 text-lg group-hover:scale-110 transition"></i>
+                    <span class="text-xs font-bold">Embed Riche</span>
+                </label>
+                <label id="labelIncludeImageOnly" class="cursor-pointer flex flex-col items-center justify-center p-3 bg-gray-800/60 text-gray-400 hover:bg-gray-800 rounded-xl border border-gray-700 transition group">
+                    <input type="checkbox" id="includeImageOnly" onchange="toggleSections()" class="sr-only">
+                    <i class="fa-solid fa-image mb-1 text-lg group-hover:scale-110 transition"></i>
+                    <span class="text-xs font-medium">Image Seule</span>
+                </label>
+            </div>
+
+            <!-- 2. Section Texte Brut -->
+            <div id="sectionTextConfig" class="bg-discord-panel border border-gray-800 p-5 rounded-2xl shadow-xl space-y-3">
+                <h2 class="text-base font-semibold text-indigo-400 flex items-center">
+                    <i class="fa-solid fa-align-left mr-2"></i> 2. Message Texte (Markdown Discord complet)
+                </h2>
+                <textarea id="messageContent" rows="3" placeholder="Écrivez votre message..." class="w-full bg-discord-input border border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition"></textarea>
+            </div>
+
+            <!-- 3. Section Embed Riche -->
+            <div id="sectionEmbedConfig" class="bg-discord-panel border border-gray-800 p-5 rounded-2xl shadow-xl space-y-4">
+                <h2 class="text-base font-semibold text-indigo-400 flex items-center">
+                    <i class="fa-solid fa-palette mr-2"></i> 3. Paramètres de l'Embed
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Couleur latérale</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="embedColor" value="#5865F2" class="w-10 h-10 bg-discord-input border border-gray-700 rounded-lg cursor-pointer p-1">
+                            <input type="text" id="embedColorHex" value="#5865F2" class="w-full bg-discord-input border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Auteur de l'Embed</label>
+                        <input type="text" id="embedAuthorName" placeholder="Nom de l'auteur" class="w-full bg-discord-input border border-gray-700 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Titre de l'Embed</label>
+                    <input type="text" id="embedTitle" placeholder="Titre principal..." class="w-full bg-discord-input border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Description (Markdown Discord supporté)</label>
+                    <textarea id="embedDescription" rows="4" placeholder="Description de l'embed..." class="w-full bg-discord-input border border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Image principale (URL)</label>
+                        <input type="text" id="embedImage" placeholder="https://..." class="w-full bg-discord-input border border-gray-700 rounded-lg px-3.5 py-2 text-xs focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Miniature / Thumbnail (URL)</label>
+                        <input type="text" id="embedThumbnail" placeholder="https://..." class="w-full bg-discord-input border border-gray-700 rounded-lg px-3.5 py-2 text-xs focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Pied de page (Footer)</label>
+                    <input type="text" id="embedFooter" placeholder="© 2026 NexusCord Studio" class="w-full bg-discord-input border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- 4. Section Image Seule -->
+            <div id="sectionImageOnlyConfig" class="bg-discord-panel border border-gray-800 p-5 rounded-2xl shadow-xl space-y-3 hidden">
+                <h2 class="text-base font-semibold text-indigo-400 flex items-center">
+                    <i class="fa-solid fa-file-image mr-2"></i> 4. Image Seule (URL)
+                </h2>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Lien direct de l'image</label>
+                    <input type="text" id="imageOnlyUrl" placeholder="https://..." class="w-full bg-discord-input border border-gray-700 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Boutons d'Action -->
+            <div class="flex flex-col sm:flex-row gap-4 pt-2">
+                <button onclick="sendWebhook()" class="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold py-3 px-6 rounded-xl transition shadow-lg flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Envoyer sur Discord</span>
+                </button>
+                <button onclick="copyJson()" class="bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold py-3 px-6 rounded-xl transition border border-gray-700 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-code"></i>
+                    <span>Copier le JSON</span>
+                </button>
+            </div>
+            
+            <div id="statusMessage" class="text-sm text-center font-medium mt-2"></div>
+        </div>
+
+        <!-- Panneau d'Aperçu en Direct (Droite) -->
+        <div class="lg:col-span-5">
+            <div class="sticky top-6 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold tracking-wider text-gray-400 uppercase flex items-center">
+                        <i class="fa-solid fa-eye mr-1.5 text-indigo-400"></i> Aperçu Discord en direct
+                    </span>
+                    <span class="bg-indigo-500/20 text-indigo-400 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-indigo-500/30">Mode sombre</span>
+                </div>
+
+                <!-- Simulation Fenêtre Discord -->
+                <div class="bg-[#313338] border border-gray-800 rounded-2xl p-4 shadow-2xl relative overflow-hidden">
+                    <div class="flex items-start space-x-3.5">
+                        <img id="previewAvatarImg" src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png" class="w-10 h-10 rounded-full shrink-0 mt-0.5 object-cover" alt="Avatar">
+                        
+                        <div class="flex-1 overflow-hidden">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span id="previewUsername" class="font-semibold text-white text-sm hover:underline cursor-pointer">NexusBot</span>
+                                <span class="bg-[#5865F2] text-white text-[10px] px-1 rounded font-medium">BOT</span>
+                                <span class="text-xs text-gray-400">Aujourd'hui à 03:28</span>
+                            </div>
+
+                            <!-- Texte Brut Markdown -->
+                            <div id="previewTextContent" class="text-gray-200 text-sm markdown-body mb-2 break-words"></div>
+
+                            <!-- Embed Container -->
+                            <div id="previewEmbedContainer" class="bg-[#2B2D31] border-l-4 border-indigo-500 rounded-r-lg p-3.5 max-w-lg space-y-2.5 shadow-md hidden">
+                                <div id="previewEmbedAuthorContainer" class="flex items-center space-x-2 text-xs font-semibold text-white hidden">
+                                    <span id="previewEmbedAuthor"></span>
+                                </div>
+                                <h3 id="previewEmbedTitle" class="text-white font-bold text-base hover:underline cursor-pointer hidden"></h3>
+                                <div id="previewEmbedDescription" class="text-gray-300 text-sm markdown-body break-words hidden"></div>
+                                <div class="grid grid-cols-1 gap-2">
+                                    <img id="previewEmbedImage" class="rounded-md max-h-60 max-w-full object-cover hidden shadow" alt="Embed image">
+                                    <img id="previewEmbedThumbnail" class="rounded-md max-h-24 max-w-[96px] object-cover hidden shadow ml-auto" alt="Thumbnail">
+                                </div>
+                                <div id="previewEmbedFooterContainer" class="flex items-center space-x-2 text-[10px] text-gray-400 pt-1 hidden">
+                                    <span id="previewEmbedFooter"></span>
+                                </div>
+                            </div>
+
+                            <!-- Image Seule -->
+                            <div id="previewImageOnlyContainer" class="mt-2 hidden">
+                                <img id="previewImageOnly" class="rounded-lg max-h-72 object-cover shadow" alt="Image seule">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guide Aide Markdown & Effets Discord (Interactif et 100% fidèle au rendu Discord) -->
+                <div class="bg-discord-panel border border-gray-800 p-4 rounded-xl text-xs text-gray-300 space-y-2.5 shadow-xl">
+                    <p class="font-bold text-indigo-400 uppercase tracking-wider mb-1 flex items-center">
+                        <i class="fa-solid fa-circle-info mr-1.5"></i> Aide Markdown & Effets Discord :
+                    </p>
+                    <div class="space-y-1.5 text-[11px]">
+                        <div class="flex items-center justify-between bg-discord-input/50 px-2.5 py-1 rounded border border-gray-800">
+                            <code class="text-indigo-300 font-bold"># Texte</code>
+                            <span class="markdown-body font-bold text-base" style="font-size: 1rem;">Titre 1</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-discord-input/50 px-2.5 py-1 rounded border border-gray-800">
+                            <code class="text-indigo-300 font-bold">## Texte</code>
+                            <span class="markdown-body font-bold text-sm" style="font-size: 0.9rem;">Titre 2</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-discord-input/50 px-2.5 py-1 rounded border border-gray-800">
+                            <code class="text-indigo-300 font-bold">### Texte</code>
+                            <span class="markdown-body font-bold text-xs" style="font-size: 0.8rem;">Titre 3</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-discord-input/50 px-2.5 py-1 rounded border border-gray-800">
+                            <code class="text-indigo-300 font-bold">**Texte**</code>
+                            <span class="font-semibold text-white">Gras</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-discord-input/50 px-2.5 py-1 rounded border border-gray-800">
+                            <code class="text-indigo-300 font-bold">*Texte*</code>
+                            <span class="italic text-gray-200">Italique</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-discord-input/50 px-2.5 py-1 rounded border border-gray-800">
+                            <code class="text-indigo-300 font-bold">__Texte__</code>
+                            <span class="discord-underline text-gray-200">Souligné</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-discord-input/50 px-2.5 py-1 rounded border border-gray-800">
+                            <code class="text-indigo-300 font-bold">~~Texte~~</code>
+                            <span class="line-through text-gray-400">Barré</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-discord-input/50 px-2.5 py-1 rounded border border-gray-800">
+                            <code class="text-indigo-300 font-bold">`code`</code>
+                            <code class="bg-[#1e1f22] px-1 py-0.5 rounded text-gray-300">Code en ligne</code>
+                        </div>
+                        <!-- Spoiler interactif directement dans l'aide pour tester -->
+                        <div class="flex items-center justify-between bg-discord-input/50 px-2.5 py-1 rounded border border-gray-800">
+                            <code class="text-indigo-300 font-bold">||texte||</code>
+                            <span class="discord-spoiler" onclick="this.classList.toggle('revealed')" title="Clique pour révéler">Spoiler masqué</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-discord-input/50 px-2.5 py-1 rounded border border-gray-800">
+                            <code class="text-indigo-300 font-bold">> Texte</code>
+                            <span class="border-l-2 border-gray-500 pl-1.5 text-gray-300 text-[10px]">Citation bloc</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Script Logique -->
+    <script>
+        marked.setOptions({ breaks: true, gfm: true });
+
+        const el = {
+            webhookUrl: document.getElementById('webhookUrl'),
+            webhookUsername: document.getElementById('webhookUsername'),
+            webhookAvatar: document.getElementById('webhookAvatar'),
+            
+            includeText: document.getElementById('includeText'),
+            includeEmbed: document.getElementById('includeEmbed'),
+            includeImageOnly: document.getElementById('includeImageOnly'),
+            
+            labelIncludeText: document.getElementById('labelIncludeText'),
+            labelIncludeEmbed: document.getElementById('labelIncludeEmbed'),
+            labelIncludeImageOnly: document.getElementById('labelIncludeImageOnly'),
+            
+            sectionTextConfig: document.getElementById('sectionTextConfig'),
+            sectionEmbedConfig: document.getElementById('sectionEmbedConfig'),
+            sectionImageOnlyConfig: document.getElementById('sectionImageOnlyConfig'),
+            
+            messageContent: document.getElementById('messageContent'),
+            
+            embedColor: document.getElementById('embedColor'),
+            embedColorHex: document.getElementById('embedColorHex'),
+            embedAuthorName: document.getElementById('embedAuthorName'),
+            embedTitle: document.getElementById('embedTitle'),
+            embedDescription: document.getElementById('embedDescription'),
+            embedImage: document.getElementById('embedImage'),
+            embedThumbnail: document.getElementById('embedThumbnail'),
+            embedFooter: document.getElementById('embedFooter'),
+            
+            imageOnlyUrl: document.getElementById('imageOnlyUrl'),
+            
+            previewUsername: document.getElementById('previewUsername'),
+            previewAvatarImg: document.getElementById('previewAvatarImg'),
+            previewTextContent: document.getElementById('previewTextContent'),
+            
+            previewEmbedContainer: document.getElementById('previewEmbedContainer'),
+            previewEmbedAuthorContainer: document.getElementById('previewEmbedAuthorContainer'),
+            previewEmbedAuthor: document.getElementById('previewEmbedAuthor'),
+            previewEmbedTitle: document.getElementById('previewEmbedTitle'),
+            previewEmbedDescription: document.getElementById('previewEmbedDescription'),
+            previewEmbedImage: document.getElementById('previewEmbedImage'),
+            previewEmbedThumbnail: document.getElementById('previewEmbedThumbnail'),
+            previewEmbedFooterContainer: document.getElementById('previewEmbedFooterContainer'),
+            previewEmbedFooter: document.getElementById('previewEmbedFooter'),
+            
+            previewImageOnlyContainer: document.getElementById('previewImageOnlyContainer'),
+            previewImageOnly: document.getElementById('previewImageOnly'),
+            
+            statusMessage: document.getElementById('statusMessage')
+        };
+
+        // Gestion de la visibilité de l'URL du Webhook (Mode mot de passe avec œil)
+        function toggleWebhookVisibility() {
+            const input = el.webhookUrl;
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Parseur personnalisé pour les effets spécifiques Discord (souligné __ et spoilers ||)
+        function parseDiscordMarkdown(rawText) {
+            if (!rawText) return "";
+            
+            let html = marked.parse(rawText);
+            html = html.replace(/__(.*?)__/g, '<span class="discord-underline">$1</span>');
+            html = html.replace(/\|\|(.*?)\|\|/g, '<span class="discord-spoiler" onclick="this.classList.toggle(\'revealed\')" title="Cliquer pour afficher le spoiler">$1</span>');
+
+            return html;
+        }
+
+        el.embedColor.addEventListener('input', (e) => {
+            el.embedColorHex.value = e.target.value.toUpperCase();
+            updatePreview();
+        });
+        el.embedColorHex.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if(!val.startsWith('#')) val = '#' + val;
+            if(/^#[0-9A-F]{6}$/i.test(val)) {
+                el.embedColor.value = val;
+                updatePreview();
+            }
+        });
+
+        // Mise à jour visuelle des boutons activés / désactivés avec distinction claire
+        function updateToggleStyles() {
+            const checkboxes = [
+                { cb: el.includeText, lbl: el.labelIncludeText },
+                { cb: el.includeEmbed, lbl: el.labelIncludeEmbed },
+                { cb: el.includeImageOnly, lbl: el.labelIncludeImageOnly }
+            ];
+
+            checkboxes.forEach(item => {
+                const span = item.lbl.querySelector('span');
+                if (item.cb.checked) {
+                    item.lbl.className = "cursor-pointer flex flex-col items-center justify-center p-3 bg-indigo-600/20 text-indigo-300 rounded-xl border border-indigo-500 transition group shadow-md";
+                    if(span) span.className = "text-xs font-bold";
+                } else {
+                    item.lbl.className = "cursor-pointer flex flex-col items-center justify-center p-3 bg-gray-800/60 text-gray-400 hover:bg-gray-800 rounded-xl border border-gray-700 transition group";
+                    if(span) span.className = "text-xs font-medium";
+                }
+            });
+        }
+
+        function toggleSections() {
+            el.sectionTextConfig.classList.toggle('hidden', !el.includeText.checked);
+            el.sectionEmbedConfig.classList.toggle('hidden', !el.includeEmbed.checked);
+            el.sectionImageOnlyConfig.classList.toggle('hidden', !el.includeImageOnly.checked);
+            updateToggleStyles();
+            updatePreview();
+        }
+
+        function hexToInt(hex) {
+            return parseInt(hex.replace('#', ''), 16);
+        }
+
+        function updatePreview() {
+            const pseudo = el.webhookUsername.value.trim();
+            el.previewUsername.textContent = pseudo !== "" ? pseudo : "NexusBot";
+
+            const avatar = el.webhookAvatar.value.trim();
+            if (avatar !== "") {
+                el.previewAvatarImg.src = avatar;
+                el.previewAvatarImg.onerror = () => { el.previewAvatarImg.src = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png"; };
+            } else {
+                el.previewAvatarImg.src = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f916.png";
+            }
+
+            // Texte Brut
+            if (el.includeText.checked && el.messageContent.value.trim() !== "") {
+                el.previewTextContent.innerHTML = parseDiscordMarkdown(el.messageContent.value);
+                el.previewTextContent.classList.remove('hidden');
+            } else {
+                el.previewTextContent.innerHTML = "";
+                el.previewTextContent.classList.add('hidden');
+            }
+
+            // Embed
+            if (el.includeEmbed.checked) {
+                el.previewEmbedContainer.classList.remove('hidden');
+                el.previewEmbedContainer.style.borderLeftColor = el.embedColor.value;
+
+                if (el.embedAuthorName.value.trim() !== "") {
+                    el.previewEmbedAuthor.textContent = el.embedAuthorName.value;
+                    el.previewEmbedAuthorContainer.classList.remove('hidden');
+                } else {
+                    el.previewEmbedAuthorContainer.classList.add('hidden');
+                }
+
+                if (el.embedTitle.value.trim() !== "") {
+                    el.previewEmbedTitle.textContent = el.embedTitle.value;
+                    el.previewEmbedTitle.classList.remove('hidden');
+                } else {
+                    el.previewEmbedTitle.classList.add('hidden');
+                }
+
+                if (el.embedDescription.value.trim() !== "") {
+                    el.previewEmbedDescription.innerHTML = parseDiscordMarkdown(el.embedDescription.value);
+                    el.previewEmbedDescription.classList.remove('hidden');
+                } else {
+                    el.previewEmbedDescription.innerHTML = "";
+                    el.previewEmbedDescription.classList.add('hidden');
+                }
+
+                if (el.embedImage.value.trim() !== "") {
+                    el.previewEmbedImage.src = el.embedImage.value;
+                    el.previewEmbedImage.classList.remove('hidden');
+                } else {
+                    el.previewEmbedImage.classList.add('hidden');
+                }
+
+                if (el.embedThumbnail.value.trim() !== "") {
+                    el.previewEmbedThumbnail.src = el.embedThumbnail.value;
+                    el.previewEmbedThumbnail.classList.remove('hidden');
+                } else {
+                    el.previewEmbedThumbnail.classList.add('hidden');
+                }
+
+                if (el.embedFooter.value.trim() !== "") {
+                    el.previewEmbedFooter.textContent = el.embedFooter.value;
+                    el.previewEmbedFooterContainer.classList.remove('hidden');
+                } else {
+                    el.previewEmbedFooterContainer.classList.add('hidden');
+                }
+            } else {
+                el.previewEmbedContainer.classList.add('hidden');
+            }
+
+            // Image Seule
+            if (el.includeImageOnly.checked && el.imageOnlyUrl.value.trim() !== "") {
+                el.previewImageOnly.src = el.imageOnlyUrl.value;
+                el.previewImageOnlyContainer.classList.remove('hidden');
+            } else {
+                el.previewImageOnlyContainer.classList.add('hidden');
+            }
+        }
+
+        document.querySelectorAll('input, textarea').forEach(item => {
+            item.addEventListener('input', updatePreview);
+        });
+
+        function buildPayload() {
+            const payload = {};
+            if (el.webhookUsername.value.trim() !== "") payload.username = el.webhookUsername.value.trim();
+            if (el.webhookAvatar.value.trim() !== "") payload.avatar_url = el.webhookAvatar.value.trim();
+
+            if (el.includeText.checked && el.messageContent.value.trim() !== "") {
+                payload.content = el.messageContent.value;
+            }
+
+            if (el.includeEmbed.checked) {
+                const embed = { color: hexToInt(el.embedColor.value) };
+                if (el.embedAuthorName.value.trim()) embed.author = { name: el.embedAuthorName.value.trim() };
+                if (el.embedTitle.value.trim()) embed.title = el.embedTitle.value.trim();
+                if (el.embedDescription.value.trim()) embed.description = el.embedDescription.value.trim();
+                if (el.embedImage.value.trim()) embed.image = { url: el.embedImage.value.trim() };
+                if (el.embedThumbnail.value.trim()) embed.thumbnail = { url: el.embedThumbnail.value.trim() };
+                if (el.embedFooter.value.trim()) embed.footer = { text: el.embedFooter.value.trim() };
+
+                payload.embeds = [embed];
+            }
+
+            if (el.includeImageOnly.checked && el.imageOnlyUrl.value.trim() !== "") {
+                if(!payload.embeds) payload.embeds = [];
+                payload.embeds.push({
+                    image: { url: el.imageOnlyUrl.value.trim() },
+                    color: hexToInt(el.embedColor.value)
+                });
+            }
+
+            return payload;
+        }
+
+        async function sendWebhook() {
+            const url = el.webhookUrl.value.trim();
+            if (!url) {
+                showStatus("Veuillez renseigner l'URL de votre Webhook Discord !", "text-red-400");
+                return;
+            }
+
+            const payload = buildPayload();
+
+            try {
+                showStatus("Envoi en cours vers Discord...", "text-yellow-400");
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok || response.status === 204) {
+                    showStatus("Annonce envoyée avec succès sur Discord ! 🎉", "text-green-400");
+                } else {
+                    const errText = await response.text();
+                    showStatus(`Erreur Discord (${response.status}) : Vérifie tes données ou tes liens URL.`, "text-red-400");
+                    console.error(errText);
+                }
+            } catch (error) {
+                showStatus("Erreur réseau / CORS lors de l'envoi du webhook.", "text-red-400");
+                console.error(error);
+            }
+        }
+
+        function copyJson() {
+            const payload = buildPayload();
+            navigator.clipboard.writeText(JSON.stringify(payload, null, 4));
+            showStatus("Code JSON copié dans le presse-papier ! 📋", "text-indigo-400");
+        }
+
+        function showStatus(message, colorClass) {
+            el.statusMessage.className = `text-sm text-center font-medium mt-2 ${colorClass}`;
+            el.statusMessage.textContent = message;
+            setTimeout(() => {
+                if (el.statusMessage.textContent === message) el.statusMessage.textContent = "";
+            }, 6000);
+        }
+
+        function resetForm() {
+            document.querySelectorAll('input[type="text"], input[type="password"], textarea').forEach(input => input.value = '');
+            el.embedColor.value = '#5865F2';
+            el.embedColorHex.value = '#5865F2';
+            el.includeText.checked = true;
+            el.includeEmbed.checked = true;
+            el.includeImageOnly.checked = false;
+            toggleSections();
+            showStatus("Formulaire réinitialisé.", "text-gray-400");
+        }
+
+        toggleSections();
+    </script>
+</body>
+</html>
